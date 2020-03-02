@@ -1,7 +1,8 @@
-###Follow the Lights, a boot sector game in 510 bytes.
-##by Oscar Toledo G. Mar/02/2020.
+### Follow the Lights, a boot sector game in 510 bytes.
+## by Oscar Toledo G. Mar/02/2020.
 
 https://nanochess.org/
+
 https://github.com/nanochess/lights
 
 It's compatible with 8088 (the original IBM PC)
@@ -33,7 +34,9 @@ If you want to learn 8086/8088 programming then you must
 get this book including a 8086/8088/V20 crash course!
 
 > Soft-cover  http://www.lulu.com/shop/oscar-toledo-gutierrez/programming-boot-sector-games/paperback/product-24188564.html
+>
 > Hard-cover  http://www.lulu.com/shop/oscar-toledo-gutierrez/programming-boot-sector-games/hardcover/product-24188530.html
+>
 > eBook       https://nanochess.org/store.html
 
   * Guess the number.
@@ -53,6 +56,7 @@ After the success of my first book, if you need even
 more boot sector games then you must get this book!
 
 > Soft-cover  http://www.lulu.com/shop/oscar-toledo-gutierrez/more-boot-sector-games/paperback/product-24448862.html
+>
 > Hard-cover  http://www.lulu.com/shop/oscar-toledo-gutierrez/more-boot-sector-games/hardcover/product-24448872.html
 
   * Follow the Lights
