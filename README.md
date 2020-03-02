@@ -1,5 +1,5 @@
-### Follow the Lights, a boot sector game in 510 bytes.
-## by Oscar Toledo G. Mar/02/2020.
+## Follow the Lights, a boot sector game in 510 bytes.
+### by Oscar Toledo G. Mar/02/2020.
 
 https://nanochess.org/
 
@@ -13,10 +13,11 @@ If you want to assemble it, you must download the Netwide Assembler
 Use this command line:
 
 > nasm -f bin lights.asm -l rogue.lst -o lights.img
+>
 > nasm -f bin lights.asm -Dcom_file=1 -o lights.com
 
 
-## HOW TO PLAY
+### HOW TO PLAY
 
 The computer will choose a sequence, and then you must
 enter the same sequence of numbers by pressing these on
@@ -26,9 +27,9 @@ The sequence then will be repeated with an added number,
 you win the game when you reach a sequence of 31 lights.
 
 
-## ATTENTION 
+### ATTENTION
 
-# Programming Boot Sector Games:
+#### Programming Boot Sector Games:
 
 If you want to learn 8086/8088 programming then you must
 get this book including a 8086/8088/V20 crash course!
@@ -50,7 +51,7 @@ get this book including a 8086/8088/V20 crash course!
   * bootBASIC language.
 
 
-# More Boot Sector Games:
+#### More Boot Sector Games:
 
 After the success of my first book, if you need even
 more boot sector games then you must get this book!
