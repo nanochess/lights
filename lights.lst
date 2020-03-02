@@ -1,0 +1,300 @@
+     1                                  	;
+     2                                  	; Follow the lights
+     3                                  	;
+     4                                  	; by Oscar Toledo G.
+     5                                  	;
+     6                                  	; Creation date: Jan/16/2020.
+     7                                  	;
+     8                                  
+     9                                  	;
+    10                                  	; Very useful info gathered from:
+    11                                  	; https://www.waitingforfriday.com/?p=586
+    12                                  	;
+    13                                  	cpu 8086
+    14                                  
+    15                                      %ifdef com_file
+    16                                  	org 0x0100
+    17                                      %else
+    18                                  	org 0x7c00
+    19                                      %endif
+    20                                  
+    21                                  old_time:	equ 0x00	; Old ticks
+    22                                  button:		equ 0x02	; Button pressed
+    23                                  next_seq:	equ 0x04	; Next seq. number
+    24                                  timing:		equ 0x06	; Current timing
+    25                                  memory:		equ 0x08	; Start of memory
+    26                                  memory_end:	equ 0x28	; End of memory
+    27                                  
+    28                                  start:
+    29 00000000 31C0                    	xor ax,ax
+    30 00000002 B91400                  	mov cx,memory_end/2
+    31                                  .0:
+    32 00000005 50                      	push ax		; Zero word initialize
+    33 00000006 E2FD                    	loop .0		; Repeat until completed
+    34 00000008 89E5                    	mov bp,sp	; Setup BP (Base Pointer)
+    35                                  
+    36 0000000A B002                    	mov al,0x02	; Text mode 80x25
+    37 0000000C CD10                    	int 0x10	; Setup video mode
+    38                                  
+    39 0000000E E440                    	in al,0x40	; Get a pseudorandom number
+    40 00000010 96                      	xchg ax,si	; Put into SI
+    41                                  
+    42 00000011 FC                      	cld		; Clear Direction flag.
+    43 00000012 B800B8                  	mov ax,0xb800	; Point to video segment
+    44 00000015 8ED8                    	mov ds,ax
+    45 00000017 8EC0                    	mov es,ax
+    46                                  
+    47 00000019 E8F000                  	call show_buttons	; Show buttons
+    48                                  restart_game:
+    49 0000001C 31C0                    	xor ax,ax	; Restart sequence
+    50 0000001E 894604                  	mov [bp+next_seq],ax
+    51                                  game_loop:
+    52 00000021 B10F                    	mov cl,15	; Wait 0.8 seconds.
+    53 00000023 E83801                  	call wait_ticks
+    54                                  
+    55                                  	;
+    56                                  	; Add a new light to sequence
+    57                                  	;
+    58 00000026 8B7E04                  	mov di,[bp+next_seq]	; Curr. position.
+    59                                  
+    60 00000029 B86100                  	mov ax,97	; Generate random number
+    61 0000002C F7E6                    	mul si
+    62 0000002E 83C017                  	add ax,23
+    63 00000031 96                      	xchg ax,si	; SI = next seed.
+    64                                  
+    65                                  			; Notice it uses the
+    66                                  			; high byte because the
+    67                                  			; random period is
+    68                                  			; longer.
+    69                                  
+    70 00000032 80E403                  	and ah,0x03	; Extract random from AH
+    71 00000035 80C431                  	add ah,0x31	; Add ASCII 1
+    72 00000038 886308                  	mov [bp+di+memory],ah	; Save into memory
+    73                                  
+    74 0000003B B80800                  	mov ax,8	; 8 aprox 0.42 secs.
+    75 0000003E 83FF05                  	cmp di,5	; For 5 or less lights.
+    76 00000041 7209                    	jb .2
+    77 00000043 B006                    	mov al,6	; 6 aprox 0.32 secs.
+    78 00000045 83FF0D                  	cmp di,13	; For 13 or less lights.
+    79 00000048 7202                    	jb .2
+    80 0000004A B004                    	mov al,4	; 4 aprox 0.22 secs.
+    81                                  .2:
+    82 0000004C 894606                  	mov [bp+timing],ax
+    83 0000004F 83FF1F                  	cmp di,31	; Doing a 31th light?
+    84 00000052 7503E98800              	je victory	; Yes, jump to victory.
+    85 00000057 FE4604                  	inc byte [bp+next_seq]
+    86                                  
+    87                                  	;
+    88                                  	; Show current sequence
+    89                                  	;
+    90 0000005A 31FF                    	xor di,di	; Restart counter
+    91 0000005C 8A4308                  .1:	mov al,[bp+di+memory]	; Read light
+    92 0000005F 57                      	push di
+    93 00000060 884602                  	mov [bp+button],al	; Push button
+    94 00000063 E8A600                  	call show_buttons	; Show
+    95 00000066 8B4E06                  	mov cx,[bp+timing]	; Wait
+    96 00000069 E8F200                  	call wait_ticks
+    97 0000006C E81501                  	call speaker_off	; Turn off
+    98                                  
+    99 0000006F C6460200                	mov byte [bp+button],0
+   100 00000073 E89600                  	call show_buttons	; Depress button
+   101 00000076 E8E300                  	call wait_tick
+   102 00000079 5F                      	pop di
+   103 0000007A 47                      	inc di		; Increase counter
+   104 0000007B 3B7E04                  	cmp di,[bp+next_seq]
+   105 0000007E 75DC                    	jne .1
+   106                                  
+   107                                  	;
+   108                                  	; Empty keyboard buffer
+   109                                  	;
+   110                                  .9:
+   111 00000080 B401                    	mov ah,0x01	; Check for key pressed.
+   112 00000082 CD16                    	int 0x16
+   113 00000084 7406                    	je .8		; No, jump.
+   114 00000086 B400                    	mov ah,0x00	; Read key.
+   115 00000088 CD16                    	int 0x16
+   116 0000008A EBF4                    	jmp .9		; Repeat loop
+   117                                  .8:
+   118                                  	;
+   119                                  	; Comparison of player input with
+   120                                  	; sequence.
+   121                                  	;
+   122 0000008C 31FF                    	xor di,di	; Restart counter
+   123 0000008E B400                    .4:	mov ah,0x00	; Wait for a key
+   124 00000090 CD16                    	int 0x16
+   125 00000092 3C1B                    	cmp al,0x1b	; Esc pressed?
+   126 00000094 746F                    	je exit_game	; Yes, jump.
+   127 00000096 3C31                    	cmp al,0x31	; Less than ASCII 1?
+   128 00000098 72F4                    	jb .4		; Yes, jump.
+   129 0000009A 3C35                    	cmp al,0x35	; Higher than ASCII 4?
+   130 0000009C 73F0                    	jnb .4		; Yes, jump.
+   131 0000009E 50                      	push ax
+   132 0000009F 57                      	push di
+   133 000000A0 884602                  	mov [bp+button],al	; Push button
+   134 000000A3 E86600                  	call show_buttons	; Show
+   135 000000A6 8B4E06                  	mov cx,[bp+timing]	; Wait
+   136 000000A9 E8B200                  	call wait_ticks
+   137 000000AC E8D500                  	call speaker_off	; Turn off
+   138                                  
+   139 000000AF C6460200                	mov byte [bp+button],0
+   140 000000B3 E85600                  	call show_buttons	; Depress button
+   141 000000B6 E8A300                  	call wait_tick
+   142 000000B9 5F                      	pop di
+   143 000000BA 58                      	pop ax
+   144 000000BB 3A4308                  	cmp al,[bp+di+memory]	; Good hit?
+   145 000000BE 7509                    	jne wrong		; No, jump
+   146                                  	
+   147 000000C0 47                      	inc di		; Increase counter
+   148 000000C1 3B7E04                  	cmp di,[bp+next_seq]
+   149 000000C4 75C8                    	jne .4
+   150 000000C6 E958FF                  	jmp game_loop
+   151                                  
+   152                                  	;
+   153                                  	; Player defeat by wrong button
+   154                                  	;
+   155 000000C9 B9F96E                  wrong:	mov cx,28409	; 1193180 / 42
+   156 000000CC E8A200                  	call speaker	; Failure tone
+   157 000000CF B11B                    	mov cl,27	; 1.5 secs
+   158 000000D1 E88A00                  	call wait_ticks
+   159 000000D4 E8AD00                  	call speaker_off	; Turn off
+   160 000000D7 B11B                    	mov cl,27	; 1.5 secs
+   161 000000D9 E88200                  	call wait_ticks
+   162 000000DC E93DFF                  	jmp restart_game	; Restart game
+   163                                  
+   164                                  	;
+   165                                  	; Victory
+   166                                  	;
+   167                                  victory:
+   168 000000DF B032                    	mov al,'2'	; Victory tune
+   169 000000E1 B90E00                  	mov cx,14	; 14 notes
+   170 000000E4 51                      .1:	push cx
+   171 000000E5 50                      	push ax
+   172 000000E6 884602                  	mov byte [bp+button],al
+   173 000000E9 E82000                  	call show_buttons	; Play
+   174 000000EC B102                    	mov cl,2	; Wait 0.1 secs.
+   175 000000EE E86D00                  	call wait_ticks
+   176 000000F1 C6460200                	mov byte [bp+button],0	; Depress
+   177 000000F5 E81400                  	call show_buttons
+   178 000000F8 58                      	pop ax
+   179 000000F9 40                      	inc ax		; Next note
+   180 000000FA 3C35                    	cmp al,'5'	; If goes to 5...
+   181 000000FC 7502                    	jne .2
+   182 000000FE B031                    	mov al,'1'	; ...go back to 1.
+   183                                  .2:
+   184 00000100 59                      	pop cx
+   185 00000101 E2E1                    	loop .1
+   186 00000103 EBC4                    	jmp wrong	; Finish and restart
+   187                                  
+   188                                  	;
+   189                                  	; Exit game
+   190                                  	;
+   191                                  exit_game:
+   192 00000105 B80200                  	mov ax,0x0002	; Clear screen by...
+   193 00000108 CD10                    	int 0x10	; ...mode setup.
+   194 0000010A CD20                    	int 0x20	; Exit to DOS / bootOS.
+   195                                  
+   196                                  	;
+   197                                  	; Show game buttons
+   198                                  	;
+   199                                  show_buttons:
+   200 0000010C BF6601                  	mov di,0x0166	; Top left on screen
+   201 0000010F BB2F31                  	mov bx,0x312f	; ASCII 1, white on green
+   202 00000112 B9390B                  	mov cx,2873	; 1193180 / 415.305 hz
+   203 00000115 E82100                  	call show_button
+   204                                  
+   205 00000118 BF9201                  	mov di,0x0192	; Top right on screen
+   206 0000011B BB4F32                  	mov bx,0x324f	; ASCII 2, white on red
+   207 0000011E B9FB0E                  	mov cx,3835	; 1193180 / 311.127 hz
+   208 00000121 E81500                  	call show_button
+   209                                  
+   210 00000124 BF4608                  	mov di,0x0846	; Bottom left on screen
+   211 00000127 BB6F33                  	mov bx,0x336f	; ASCII 3, white on brown
+   212 0000012A B9CC12                  	mov cx,4812	; 1193180 / 247.942 hz
+   213 0000012D E80900                  	call show_button
+   214                                  
+   215 00000130 BF7208                  	mov di,0x0872	; Bottom right on screen
+   216 00000133 BB3F34                  	mov bx,0x343f	; ASCII 4, white on turquoise
+   217 00000136 B97216                  	mov cx,5746	; 1193180 / 207.652 hz
+   218                                  
+   219                                  show_button:
+   220 00000139 B020                    	mov al,0x20	; Fill with spaces
+   221 0000013B 3A7E02                  	cmp bh,[bp+button]	; Is it pressed?
+   222 0000013E 7505                    	jne .0		; No, jump.
+   223 00000140 E82E00                  	call speaker	; Yes, play sound.
+   224 00000143 B0B0                    	mov al,0xb0	; Semi-filled block
+   225                                  .0:
+   226 00000145 B90A00                  	mov cx,10	; 10 rows high.
+   227 00000148 51                      .1:	push cx
+   228 00000149 88DC                    	mov ah,bl	; Set attribute byte.
+   229 0000014B B114                    	mov cl,20	; 20 columns width.
+   230 0000014D F3AB                    	rep stosw	; Fill on screen
+   231 0000014F 83C778                  	add di,160-20*2		; Go to next row
+   232 00000152 59                      	pop cx
+   233 00000153 E2F3                    	loop .1		; Repeat until filled
+   234 00000155 88F8                    	mov al,bh	; Get button number
+   235 00000157 8985F4FC                	mov [di+20-5*160],ax	; Put on center
+   236 0000015B C3                      	ret		; Return
+   237                                  
+   238                                  	;
+   239                                  	; Wait for one tick
+   240                                  	;
+   241                                  wait_tick:
+   242 0000015C B101                    	mov cl,1
+   243                                  
+   244                                  	;
+   245                                  	; Wait for several ticks
+   246                                  	;
+   247                                  	; Input:
+   248                                  	; CL = Number of ticks
+   249                                  	;
+   250                                  wait_ticks:
+   251 0000015E B500                    	mov ch,0
+   252                                  .0:
+   253 00000160 51                      	push cx		; Save counter
+   254                                  .1:
+   255 00000161 B400                    	mov ah,0x00	; Read ticks
+   256 00000163 CD1A                    	int 0x1a	; Call BIOS
+   257 00000165 3B5600                  	cmp dx,[bp+old_time]	; Wait for tick change
+   258 00000168 74F7                    	je .1
+   259 0000016A 895600                  	mov [bp+old_time],dx	; Save new tick
+   260 0000016D 59                      	pop cx		; Restore counter
+   261 0000016E E2F0                    	loop .0		; Loop until complete
+   262 00000170 C3                      	ret		; Return
+   263                                  
+   264                                  	;
+   265                                  	; Generate sound on PC speaker
+   266                                  	;
+   267                                  	; Input:
+   268                                  	; CX = Frequency value.
+   269                                  	;      (calculate 1193180/freq = req. value)
+   270                                  	;
+   271                                  speaker:
+   272 00000171 B0B6                    	mov al,0xb6	; Setup timer 2
+   273 00000173 E643                    	out 0x43,al
+   274 00000175 88C8                    	mov al,cl	; Low byte of timer count
+   275 00000177 E642                    	out 0x42,al
+   276 00000179 88E8                    	mov al,ch	; High byte of timer count
+   277 0000017B E642                    	out 0x42,al
+   278 0000017D E461                    	in al,0x61
+   279 0000017F 0C03                    	or al,0x03	; Wire PC speaker to timer 2
+   280 00000181 E661                    	out 0x61,al
+   281 00000183 C3                      	ret
+   282                                  
+   283                                  	;
+   284                                  	; Turn speaker off
+   285                                  	;
+   286                                  speaker_off:
+   287 00000184 E461                    	in al,0x61
+   288 00000186 24FC                    	and al,0xfc	; Turn off
+   289 00000188 E661                    	out 0x61,al
+   290 0000018A C3                      	ret
+   291                                  
+   292                                  	;
+   293                                  	; Boot sector signature
+   294                                  	;
+   295                                      %ifdef com_file
+   296                                      %else
+   297 0000018B 4F<rept>                	times 510-($-$$) db 0x4f
+   298 000001FE 55AA                    	db 0x55,0xaa	; Make it a bootable sector
+   299                                      %endif
+   300                                  
