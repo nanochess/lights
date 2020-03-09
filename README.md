@@ -54,9 +54,9 @@ get this book including a 8086/8088/V20 crash course!
 After the success of my first book, if you need even
 more boot sector games then you must get this book!
 
-> Soft-cover  http://www.lulu.com/shop/oscar-toledo-gutierrez/more-boot-sector-games/paperback/product-24448862.html
+> Soft-cover  http://www.lulu.com/shop/oscar-toledo-gutierrez/more-boot-sector-games/paperback/product-24462035.html
 >
-> Hard-cover  http://www.lulu.com/shop/oscar-toledo-gutierrez/more-boot-sector-games/hardcover/product-24448872.html
+> Hard-cover  http://www.lulu.com/shop/oscar-toledo-gutierrez/more-boot-sector-games/hardcover/product-24462029.html
 
   * Follow the Lights
   * bootRogue
